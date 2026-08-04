@@ -1,0 +1,15 @@
+application:
+  environment: development
+  log_level: INFO
+  log_directory: logs
+  timezone: Asia/Kolkata
+
+storage:
+  data_directory: data
+  duckdb_path: data/database.duckdb
+  parquet_compression: zstd
+
+market:
+  provider: yahoo
+  benchmark_symbol: ^NSEI
+  exchange_suffix: .NS

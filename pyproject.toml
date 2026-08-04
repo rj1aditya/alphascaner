@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "alphascanner"
+version = "0.1.0"
+description = "Professional quantitative positional trading scanner for NSE."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+authors = [{ name = "AlphaScanner Contributors" }]
+dependencies = [
+    "duckdb>=1.2,<2.0",
+    "loguru>=0.7.3,<1.0.0",
+    "pandas>=2.2,<3.0",
+    "pydantic>=2.10,<3.0",
+    "PyYAML>=6.0.2,<7.0.0",
+    "typer>=0.15,<1.0",
+    "yfinance>=0.2.50,<1.0",
+    "pyarrow>=18.0,<20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.10,<25.0",
+    "mypy>=1.14,<2.0",
+    "pytest>=8.3,<9.0",
+    "pytest-cov>=6.0,<7.0",
+    "ruff>=0.9,<1.0",
+    "types-PyYAML>=6.0.12.20250915",
+    "pandas-stubs>=2.2.3.241126",
+]
+
+[project.scripts]
+alphascanner = "app.cli.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --cov=app --cov-report=term-missing --cov-fail-under=80"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["app"]
+warn_unreachable = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = ["yfinance"]
+ignore_missing_imports = true
