@@ -29,4 +29,3 @@ pytest
 ```
 
 See [Milestone 1](docs/milestone-1.md) for architecture and the delivery roadmap.
-# alphascaner

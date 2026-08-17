@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from datetime import date
 from pathlib import Path
 from typing import Annotated
@@ -16,6 +18,15 @@ from app.core.logging import configure_logging
 from app.data.service import MarketDataService
 from app.data.storage import PriceStore
 from app.data.yahoo import YahooProvider
+from app.indicators.engine import IndicatorEngine
+from app.indicators.service import IndicatorRefreshService
+from app.indicators.storage import IndicatorStore
+from app.patterns.service import PatternAnalysisService
+from app.patterns.signals import SignalEngine
+from app.patterns.trend import TrendEngine
+from app.reports.service import ReportService
+from app.scoring.engine import ScoreEngine
+from app.scoring.service import ScoringService
 
 app = typer.Typer(
     name="alphascanner", help="Professional NSE positional trading scanner.", no_args_is_help=True
@@ -70,6 +81,72 @@ def update(
         result = service.update(symbol.upper(), start_date, end_date)
         logger.info("Updated {} with {} rows", result.symbol, result.rows_written)
         typer.echo(f"{result.symbol}: {result.rows_written} rows")
+
+
+@app.command()
+def indicators(
+    symbols: Annotated[list[str], typer.Argument(help="Stored NSE symbols to calculate.")],
+    benchmark: Annotated[str | None, typer.Option(help="Stored benchmark symbol.")] = None,
+) -> None:
+    """Calculate and persist indicators from previously downloaded raw price data."""
+    settings = load_settings()
+    prices = PriceStore(
+        settings.storage.data_directory,
+        settings.storage.duckdb_path,
+        settings.storage.parquet_compression,
+    )
+    service = IndicatorRefreshService(
+        prices,
+        IndicatorEngine(settings.indicators),
+        IndicatorStore(settings.storage.data_directory, settings.storage.parquet_compression),
+    )
+    benchmark_symbol = benchmark or settings.market.benchmark_symbol
+    for symbol in symbols:
+        result = service.refresh(symbol.upper(), benchmark_symbol)
+        typer.echo(f"{result.symbol}: {result.rows_processed} rows -> {result.output_path}")
+
+
+@app.command()
+def patterns(
+    symbols: Annotated[list[str], typer.Argument(help="Symbols with processed indicator data.")],
+) -> None:
+    """Detect and persist the latest trend, structure, and price-action signals."""
+    settings = load_settings()
+    service = PatternAnalysisService(settings.storage.data_directory, TrendEngine(), SignalEngine())
+    for symbol in symbols:
+        result = service.analyse(symbol.upper())
+        typer.echo(f"{result.symbol}: {result.trend}; {', '.join(result.signals) or 'no signals'}")
+
+
+@app.command()
+def score(
+    symbols: Annotated[
+        list[str], typer.Argument(help="Symbols with persisted indicator and pattern data.")
+    ],
+) -> None:
+    """Score and rank symbols from the latest processed analysis."""
+    settings = load_settings()
+    service = ScoringService(settings.storage.data_directory, ScoreEngine(settings.scoring))
+    for rank, result in enumerate(service.rank(symbols), start=1):
+        typer.echo(f"{rank}. {result.symbol}: {result.total:.2f}")
+
+
+@app.command()
+def report(
+    symbols: Annotated[list[str], typer.Argument(help="Symbols to include in ranked reports.")],
+) -> None:
+    """Export ranked opportunities as CSV, Parquet, and Excel."""
+    settings = load_settings()
+    scoring = ScoringService(settings.storage.data_directory, ScoreEngine(settings.scoring))
+    paths = ReportService(settings.storage.data_directory, scoring).generate(symbols)
+    for format_name, path in paths.items():
+        typer.echo(f"{format_name}: {path}")
+
+
+@app.command()
+def dashboard() -> None:
+    """Launch the interactive Streamlit dashboard."""
+    subprocess.run([sys.executable, "-m", "streamlit", "run", "app/dashboard/main.py"], check=True)
 
 
 @config_app.command("show")

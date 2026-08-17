@@ -13,3 +13,29 @@ market:
   provider: yahoo
   benchmark_symbol: ^NSEI
   exchange_suffix: .NS
+
+indicators:
+  sma_periods: [20, 50, 100, 150, 200]
+  ema_periods: [20, 50, 100, 150, 200]
+  rsi_period: 14
+  atr_period: 14
+  adx_period: 14
+  macd_fast_period: 12
+  macd_slow_period: 26
+  macd_signal_period: 9
+  bollinger_period: 20
+  bollinger_stddev: 2.0
+  keltner_period: 20
+  keltner_atr_multiplier: 2.0
+  donchian_period: 20
+  volume_average_period: 20
+  rolling_high_low_period: 20
+  fifty_two_week_period: 252
+
+scoring:
+  trend_weight: 25
+  momentum_weight: 15
+  pattern_weight: 25
+  volume_weight: 15
+  relative_strength_weight: 10
+  risk_weight: 10
