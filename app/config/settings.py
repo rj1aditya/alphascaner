@@ -46,6 +46,40 @@ class MarketSettings(BaseModel):
     exchange_suffix: str = ".NS"
 
 
+class IndicatorSettings(BaseModel):
+    """Validated parameters used by the technical-indicator engine."""
+
+    model_config = ConfigDict(frozen=True)
+    sma_periods: tuple[int, ...] = (20, 50, 100, 150, 200)
+    ema_periods: tuple[int, ...] = (20, 50, 100, 150, 200)
+    rsi_period: int = Field(default=14, ge=2)
+    atr_period: int = Field(default=14, ge=2)
+    adx_period: int = Field(default=14, ge=2)
+    macd_fast_period: int = Field(default=12, ge=2)
+    macd_slow_period: int = Field(default=26, ge=2)
+    macd_signal_period: int = Field(default=9, ge=2)
+    bollinger_period: int = Field(default=20, ge=2)
+    bollinger_stddev: float = Field(default=2.0, gt=0)
+    keltner_period: int = Field(default=20, ge=2)
+    keltner_atr_multiplier: float = Field(default=2.0, gt=0)
+    donchian_period: int = Field(default=20, ge=2)
+    volume_average_period: int = Field(default=20, ge=2)
+    rolling_high_low_period: int = Field(default=20, ge=2)
+    fifty_two_week_period: int = Field(default=252, ge=2)
+
+
+class ScoringSettings(BaseModel):
+    """Weights for the opportunity-ranking model; they must total 100."""
+
+    model_config = ConfigDict(frozen=True)
+    trend_weight: float = Field(default=25, ge=0)
+    momentum_weight: float = Field(default=15, ge=0)
+    pattern_weight: float = Field(default=25, ge=0)
+    volume_weight: float = Field(default=15, ge=0)
+    relative_strength_weight: float = Field(default=10, ge=0)
+    risk_weight: float = Field(default=10, ge=0)
+
+
 class Settings(BaseModel):
     """Validated aggregate application configuration."""
 
@@ -53,6 +87,8 @@ class Settings(BaseModel):
     application: ApplicationSettings = ApplicationSettings()
     storage: StorageSettings = StorageSettings()
     market: MarketSettings = MarketSettings()
+    indicators: IndicatorSettings = IndicatorSettings()
+    scoring: ScoringSettings = ScoringSettings()
 
 
 def _resolve_config_path(config_path: Path | None) -> Path:
